@@ -4,7 +4,11 @@ Módulo terrestre del observatorio de fricción logística. Índice de fletes
 por tonelada-kilómetro sobre datos del RNDC. Formato: lo más reciente arriba.
 
 ---
+## 2026-07-17 — Nombres archivos de datos RNDC
 
+Los archivos crudos conservan el nombre nativo del RNDC (EstadisticasRNDC_AAAAMM.xlsx) como evidencia de procedencia; no se renombran.
+
+---
 ## 2026-07-16 — Contrato v1
 
 **Qué monitorea:** flete pagado ($/ton-km) en los ~15-20 corredores pesados
