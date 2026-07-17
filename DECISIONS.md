@@ -4,9 +4,9 @@ Módulo terrestre del observatorio de fricción logística. Índice de fletes
 por tonelada-kilómetro sobre datos del RNDC. Formato: lo más reciente arriba.
 
 ---
-## 2026-07-17 — Nombres archivos de datos RNDC
+## 2026-07-17 —Archivos de datos RNDC
 
-Los archivos crudos conservan el nombre nativo del RNDC (EstadisticasRNDC_AAAAMM.xlsx) como evidencia de procedencia; no se renombran.
+Los archivos crudos .xlsx (~25 MB/mes) no se versionan en el repo por tamaño; viven en almacenamiento externo. El repo versiona extractos mensuales livianos en data/procesado/. La reducción crudo→extracto es el primer paso del pipeline.
 
 ---
 ## 2026-07-16 — Contrato v1
