@@ -13,6 +13,11 @@ from zoneinfo import ZoneInfo
 
 def titular(factor, corredores):
     """Título declarativo: enuncia el hallazgo del mes, no el tema."""
+    candidatos = {c: d for c, d in corredores.items()
+                  if d["viajes"] >= VIAJES_MINIMOS_TITULAR}
+    if not candidatos:
+        candidatos = corredores      # respaldo por si ningún corredor supera el piso
+    
     movs = sorted(corredores.items(), key=lambda kv: abs(kv[1]["residuo_pct"]),
                   reverse=True)
     c, d = movs[0]
