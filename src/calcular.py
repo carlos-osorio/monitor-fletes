@@ -45,14 +45,23 @@ def flete_unitario(g):
     return g["VALORESPAGADOS"].sum() / (g["KILOGRAMOS"].sum() / 1000 * g["KILOMETROS"].mean())
 
 
+DENSIDAD_MINIMA = 10     # ton/viaje: un tractocamión con menos no transporta carga pesada creíble
+
 def construir_panel(f):
     top = (f.groupby("corredor")["VIAJESTOTALES"].sum()
            .sort_values(ascending=False).head(N_CORREDORES).index)
     sub = f[f["corredor"].isin(top)]
+
+    # Excluir corredores de baja densidad (carga voluminosa-ligera mal medida en $/ton-km)
+    densidad = (sub.groupby("corredor")["KILOGRAMOS"].sum() / 1000 /
+                sub.groupby("corredor")["VIAJESTOTALES"].sum())
+    livianos = densidad[densidad < DENSIDAD_MINIMA].index.tolist()
+    sub = sub[~sub["corredor"].isin(livianos)]
+
     panel = (sub.groupby(["periodo", "corredor"])
              .apply(flete_unitario, include_groups=False).unstack())
     viajes = (sub.groupby(["periodo", "corredor"])["VIAJESTOTALES"].sum().unstack())
-    return panel, viajes
+    return panel, viajes, livianos
 
 
 def z_sombra(resid):
@@ -67,7 +76,7 @@ def z_sombra(resid):
 
 def main():
     df = cargar("data/procesado")
-    panel, viajes = construir_panel(filtrar(df))
+    panel, viajes, livianos = construir_panel(filtrar(df))
 
     var = np.log(panel).diff().dropna(how="all")
     volatiles = var.std()[var.std() > VOLATILIDAD_MAXIMA].index.tolist()
