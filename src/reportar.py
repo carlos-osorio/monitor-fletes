@@ -1,8 +1,7 @@
 """Convierte el índice mensual en el boletín de fletes (Markdown).
 
-Salida: reports/fletes_AAAAMM.md (histórico) y reports/fletes_ultimo.md (enlace estable).
-La detección está en modo sombra: se reportan variaciones y factor común como
-información, sin emitir alertas (ver DECISIONS.md).
+Salida: reports/fletes_AAAAMM.md (histórico) y reports/fletes_ultimo.md.
+Detección en modo sombra: variaciones como información, sin alertas (DECISIONS.md).
 """
 
 import json
@@ -11,13 +10,16 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 VIAJES_MINIMOS_TITULAR = 500
-DENSIDAD_TITULAR = 12      # ton/viaje mínimas ese mes para poder titular
+DENSIDAD_TITULAR = 12
+UMBRAL_DESTACAR = 8        # % vs. mercado para mencionar un corredor en título/resumen
+
 
 def describir_mov(pct):
     a = abs(pct)
     if a < 3:
         return "estable"
     return f"{'subió' if pct > 0 else 'bajó'} {a:.0f}%"
+
 
 def titular(factor, corredores):
     candidatos = {
@@ -27,16 +29,28 @@ def titular(factor, corredores):
     }
     if not candidatos:
         candidatos = corredores
-    movs = sorted(candidatos.items(),
-                  key=lambda kv: abs(kv[1]["residuo_pct"]), reverse=True)
-    c, d = movs[0]
+    c, d = sorted(candidatos.items(),
+                  key=lambda kv: abs(kv[1]["residuo_pct"]), reverse=True)[0]
+    if abs(d["residuo_pct"]) < UMBRAL_DESTACAR:
+        return (f"El costo de transportar carga se mantuvo estable: "
+                f"se movió {describir_mov(factor)} en promedio")
     origen = c.split(" → ")[0].split()[0].title()
     destino = c.split(" → ")[1].split()[0].title()
-    if abs(d["residuo_pct"]) < 5:
-        return f"Fletes estables: el mercado se movió {factor:+.1f}% y ningún corredor se apartó del patrón"
-    signo = "subió" if d["residuo_pct"] > 0 else "cayó"
+    signo = "subió" if d["residuo_pct"] > 0 else "bajó"
     return (f"{origen}–{destino} {signo} {abs(d['variacion_pct']):.0f}% "
-            f"mientras el mercado se movió {factor:+.1f}%")
+            f"mientras el mercado se movió {describir_mov(factor)}")
+
+
+def resumen_mes(factor, corredores):
+    destacados = [c for c, d in corredores.items()
+                  if abs(d["residuo_pct"]) >= UMBRAL_DESTACAR
+                  and d["viajes"] >= VIAJES_MINIMOS_TITULAR
+                  and d.get("densidad", 99) >= DENSIDAD_TITULAR]
+    base = (f"El costo de transportar carga se movió {describir_mov(factor)} "
+            "en promedio este mes")
+    if not destacados:
+        return base + ", y ningún corredor importante se salió de ese patrón."
+    return base + f". {len(destacados)} corredor(es) se movieron con dinámica propia; ver la tabla."
 
 
 def main():
@@ -48,15 +62,12 @@ def main():
     corredores = r["corredores"]
     factor = r["factor_comun_pct"]
 
-      
     md = [f"# {titular(factor, corredores)}",
           f"### Costo del transporte de carga por corredor — {r['mes_analizado']}",
           f"*Generado el {hoy}. Fuente: RNDC (Ministerio de Transporte), "
           f"{r['meses_disponibles']} meses de datos.*",
           "",
-          f"**El costo de transportar carga se movió {describir_mov(factor)} "
-          f"en promedio este mes.** La tabla muestra cada corredor y si se apartó "
-          f"de ese movimiento general.",
+          f"**{resumen_mes(factor, corredores)}**",
           ""]
 
     md += ["| Corredor | Costo por tonelada movida 1 km | Cambio del mes | "
@@ -88,17 +99,16 @@ def main():
            "para que el costo por tonelada sea comparable. La detección automática "
            "de variaciones inusuales está en preparación y requiere más meses de "
            "datos; por ahora las cifras se presentan como información. Datos con "
-           "unos dos meses de rezago. Metodología completa y código en el repositorio.",
-           ""]
-    # ... (escritura de archivos igual)
+           "unos dos meses de rezago. Metodología y código en el repositorio.",
+           "",
+           f"*[Metodología y código](https://github.com/carlos-osorio/monitor-fletes)*"]
 
     texto = "\n".join(md)
     Path("reports").mkdir(exist_ok=True)
     (Path("reports") / f"fletes_{r['mes_analizado'].replace('-','')}.md").write_text(
         texto, encoding="utf-8")
     (Path("reports") / "fletes_ultimo.md").write_text(texto, encoding="utf-8")
-    print(f"Boletín escrito: reports/fletes_ultimo.md")
-    print(f"Titular: {titular(factor, corredores)}")
+    print(f"Boletín escrito. Titular: {titular(factor, corredores)}")
 
 
 if __name__ == "__main__":
