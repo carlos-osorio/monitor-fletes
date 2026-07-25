@@ -1,4 +1,4 @@
-"""Convierte el índice mensual en el boletín de fletes (Markdown).
+"""Convierte el índice mensual en el boletín de fletes (Markdown)
 
 Salida: reports/fletes_AAAAMM.md (histórico) y reports/fletes_ultimo.md.
 Detección en modo sombra: variaciones como información, sin alertas (DECISIONS.md).
