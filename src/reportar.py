@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+VIAJES_MINIMOS_TITULAR = 500
 
 def titular(factor, corredores):
     """Título declarativo: enuncia el hallazgo del mes, no el tema."""
