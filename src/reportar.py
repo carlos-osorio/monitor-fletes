@@ -11,11 +11,13 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 VIAJES_MINIMOS_TITULAR = 500
+DENSIDAD_TITULAR = 12      # ton/viaje mínimas ese mes para poder titular
 
 def titular(factor, corredores):
     """Título declarativo: enuncia el hallazgo del mes, no el tema."""
     candidatos = {c: d for c, d in corredores.items()
                   if d["viajes"] >= VIAJES_MINIMOS_TITULAR}
+                  and d.get("densidad", 99) >= DENSIDAD_TITULAR}
     if not candidatos:
         candidatos = corredores      # respaldo por si ningún corredor supera el piso
     
