@@ -89,6 +89,8 @@ def main():
 
     ultimo = panel_v1.index[-1]
     corredores = {}
+    kg_mes = (filtrar(df).assign(corredor=lambda x: x["MUNICIPIOORIGEN"]+" → "+x["MUNICIPIODESTINO"])
+          .groupby(["periodo","corredor"])["KILOGRAMOS"].sum().unstack())
     for c in panel_v1.columns:
         corredores[c] = {
             "flete_ton_km": round(float(panel_v1.loc[ultimo, c]), 1),
@@ -97,6 +99,8 @@ def main():
             "viajes": int(viajes.loc[ultimo, c]),
             "z_sombra": (None if pd.isna(z.loc[ultimo, c])
                          else round(float(z.loc[ultimo, c]), 2)),
+            "densidad": round(float(kg_mes.loc[ultimo, c]/1000/viajes.loc[ultimo, c]), 1)
+            
         }
 
     resultado = {
