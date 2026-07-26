@@ -32,8 +32,10 @@ def titular(factor, corredores):
     c, d = sorted(candidatos.items(),
                   key=lambda kv: abs(kv[1]["residuo_pct"]), reverse=True)[0]
     if abs(d["residuo_pct"]) < UMBRAL_DESTACAR:
-        return (f"El costo de transportar carga se mantuvo estable: "
-                f"se movió {describir_mov(factor)} en promedio")
+        if abs(factor) < 3:
+            return "El costo de transportar carga se mantuvo estable este mes"
+        return (f"El costo de transportar carga {describir_mov(factor)} en promedio, "
+                "sin corredores fuera del patrón")
     origen = c.split(" → ")[0].split()[0].title()
     destino = c.split(" → ")[1].split()[0].title()
     signo = "subió" if d["residuo_pct"] > 0 else "bajó"
