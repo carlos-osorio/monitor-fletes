@@ -105,12 +105,44 @@ def main():
            "",
            f"*[Metodología y código](https://github.com/carlos-osorio/monitor-fletes)*"]
 
+    
     texto = "\n".join(md)
     Path("reports").mkdir(exist_ok=True)
     (Path("reports") / f"fletes_{r['mes_analizado'].replace('-','')}.md").write_text(
         texto, encoding="utf-8")
     (Path("reports") / "fletes_ultimo.md").write_text(texto, encoding="utf-8")
     print(f"Boletín escrito. Titular: {titular(factor, corredores)}")
+    # Versión web: index.html en la raíz, para GitHub Pages
+    try:
+        import markdown  # convierte Markdown a HTML
+        cuerpo = markdown.markdown(texto, extensions=["tables"])
+    except ImportError:
+        cuerpo = f"<pre>{texto}</pre>"   # respaldo si no está la librería
+
+    html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor de fletes — Colombia</title>
+<style>
+  body {{ max-width: 820px; margin: 2rem auto; padding: 0 1rem;
+          font-family: system-ui, -apple-system, sans-serif; line-height: 1.5; color: #222; }}
+  h1 {{ font-size: 1.5rem; }}
+  table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
+  th, td {{ border: 1px solid #ddd; padding: 6px 10px; text-align: right; }}
+  th:first-child, td:first-child {{ text-align: left; }}
+  th {{ background: #f4f4f4; }}
+  em {{ color: #666; }}
+</style>
+</head>
+<body>
+{cuerpo}
+</body>
+</html>"""
+    Path("index.html").write_text(html, encoding="utf-8")
+
+
 
 
 if __name__ == "__main__":
