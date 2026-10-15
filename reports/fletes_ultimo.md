@@ -1,30 +1,30 @@
-# Barranquilla–Bogota subió 20% mientras el mercado se movió estable
-### Costo del transporte de carga por corredor — 2026-07
-*Generado el 2026-08-08. Fuente: RNDC (Ministerio de Transporte), 26 meses de datos.*
+# Buenaventura–Cota bajó 22% mientras el mercado se movió estable
+### Costo del transporte de carga por corredor — 2026-09
+*Generado el 2026-10-15. Fuente: RNDC (Ministerio de Transporte), 28 meses de datos.*
 
-**El costo de transportar carga se movió estable en promedio este mes. 5 corredor(es) se movieron con dinámica propia; ver la tabla.**
+**El costo de transportar carga se movió estable en promedio este mes. 4 corredor(es) se movieron con dinámica propia; ver la tabla.**
 
 | Corredor | Costo por tonelada movida 1 km | Cambio del mes | Comparado con el promedio | Viajes |
 |---|---:|---:|---:|---:|
-| Barranquilla → Bogota Bogota D. | $270 | subió 20% | 19% más que el promedio | 501 |
-| Cartagena → Girardota | $437 | bajó 16% | 18% menos que el promedio | 469 |
-| Buenaventura Valle Del → Tenjo | $819 | bajó 13% | 15% menos que el promedio | 614 |
-| Cartagena → Madrid | $354 | subió 16% | 15% más que el promedio | 544 |
-| Buenaventura Valle Del → Funza | $619 | bajó 11% | 13% menos que el promedio | 1,457 |
-| Buenaventura Valle Del → Madrid | $420 | bajó 10% | 12% menos que el promedio | 508 |
-| Cartagena → Cota | $349 | subió 10% | 8% más que el promedio | 658 |
-| Bogota Bogota D. → Cartagena | $415 | subió 7% | 6% más que el promedio | 667 |
-| Nobsa → Bogota Bogota D. | $343 | subió 7% | 5% más que el promedio | 61 |
-| Cartagena → Tocancipa | $293 | subió 6% | 4% más que el promedio | 981 |
-| Buenaventura Valle Del → Bogota Bogota D. | $578 | subió 6% | 4% más que el promedio | 4,063 |
-| Cartagena → Medellin | $440 | subió 5% | 4% más que el promedio | 523 |
-| Cartagena → Bogota Bogota D. | $311 | estable | igual que el promedio | 1,788 |
-| Buenaventura Valle Del → Tocancipa | $543 | estable | igual que el promedio | 559 |
-| Buenaventura Valle Del → Itagui | $534 | estable | igual que el promedio | 403 |
-| Cartagena → Funza | $347 | estable | igual que el promedio | 1,134 |
-| Buenaventura Valle Del → Medellin | $583 | estable | igual que el promedio | 858 |
-| Buenaventura Valle Del → Cota | $462 | estable | igual que el promedio | 1,541 |
-| Buenaventura Valle Del → Mosquera | $547 | estable | igual que el promedio | 866 |
+| Buenaventura Valle Del → Cota | $441 | bajó 22% | 21% menos que el promedio | 1,429 |
+| Cartagena → Cota | $311 | bajó 16% | 15% menos que el promedio | 794 |
+| Nobsa → Bogota Bogota D. | $179 | bajó 16% | 15% menos que el promedio | 283 |
+| Buenaventura Valle Del → Mosquera | $606 | subió 14% | 15% más que el promedio | 1,040 |
+| Cartagena → Madrid | $391 | subió 7% | 9% más que el promedio | 463 |
+| Buenaventura Valle Del → Medellin | $643 | subió 7% | 8% más que el promedio | 890 |
+| Buenaventura Valle Del → Madrid | $458 | subió 6% | 8% más que el promedio | 536 |
+| Cartagena → Funza | $392 | subió 5% | 6% más que el promedio | 990 |
+| Buenaventura Valle Del → Bogota Bogota D. | $603 | subió 5% | 6% más que el promedio | 3,513 |
+| Cartagena → Bogota Bogota D. | $346 | subió 4% | 5% más que el promedio | 1,771 |
+| Bogota Bogota D. → Cartagena | $435 | bajó 6% | 5% menos que el promedio | 896 |
+| Cartagena → Medellin | $419 | bajó 6% | 5% menos que el promedio | 549 |
+| Buenaventura Valle Del → Funza | $652 | bajó 5% | 4% menos que el promedio | 1,539 |
+| Cartagena → Girardota | $474 | estable | igual que el promedio | 434 |
+| Buenaventura Valle Del → Tocancipa | $632 | bajó 3% | igual que el promedio | 608 |
+| Buenaventura Valle Del → Tenjo | $854 | estable | igual que el promedio | 584 |
+| Barranquilla → Bogota Bogota D. | $242 | estable | igual que el promedio | 642 |
+| Buenaventura Valle Del → Itagui | $555 | estable | igual que el promedio | 384 |
+| Cartagena → Tocancipa | $302 | estable | igual que el promedio | 983 |
 
 **Cómo leer la tabla:**
 - *Costo por tonelada movida 1 km*: lo que cuesta, en promedio, transportar una tonelada a lo largo de un kilómetro en ese corredor (camiones pesados de carga seca).
