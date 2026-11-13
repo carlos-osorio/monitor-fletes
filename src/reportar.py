@@ -1,10 +1,16 @@
-"""Convierte el índice mensual en el boletín de fletes (Markdown)
+"""Convierte el índice mensual en el boletín de fletes (Markdown y página web).
 
-Salida: reports/fletes_AAAAMM.md (histórico) y reports/fletes_ultimo.md.
+Salida: reports/fletes_AAAAMM.md (histórico); si el mes es el más reciente,
+también reports/fletes_ultimo.md e index.html.
 Detección en modo sombra: variaciones como información, sin alertas (DECISIONS.md).
+
+Uso:
+    python src/reportar.py            # último índice disponible
+    python src/reportar.py 2026-08    # un mes específico (requiere data/indice_202608.json)
 """
 
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -21,6 +27,12 @@ def describir_mov(pct):
     return f"{'subió' if pct > 0 else 'bajó'} {a:.0f}%"
 
 
+def estado_mercado(factor):
+    if abs(factor) < 3:
+        return "se mantuvo estable"
+    return describir_mov(factor)
+
+
 def titular(factor, corredores):
     candidatos = {
         c: d for c, d in corredores.items()
@@ -33,14 +45,12 @@ def titular(factor, corredores):
                   key=lambda kv: abs(kv[1]["residuo_pct"]), reverse=True)[0]
     if abs(d["residuo_pct"]) < UMBRAL_DESTACAR:
         if abs(factor) < 3:
-            return "El costo de transportar carga se mantuvo estable este mes"
-        return (f"El costo de transportar carga {describir_mov(factor)} en promedio, "
+            return "El pago por viaje de la carga pesada se mantuvo estable este mes"
+        return (f"El pago por viaje de la carga pesada {describir_mov(factor)} en promedio, "
                 "sin corredores fuera del patrón")
-    origen = c.split(" → ")[0].split()[0].title()
-    destino = c.split(" → ")[1].split()[0].title()
-    signo = "subió" if d["residuo_pct"] > 0 else "bajó"
-    return (f"{origen}–{destino} {signo} {abs(d['variacion_pct']):.0f}% "
-            f"mientras el mercado se movió {describir_mov(factor)}")
+    origen, destino = [nombre_municipio(p) for p in c.split(" → ")]
+    return (f"{origen}–{destino}: el pago por viaje {describir_mov(d['variacion_viaje_pct'])} "
+            f"mientras el mercado {estado_mercado(factor)}")
 
 
 def resumen_mes(factor, corredores):
@@ -48,15 +58,48 @@ def resumen_mes(factor, corredores):
                   if abs(d["residuo_pct"]) >= UMBRAL_DESTACAR
                   and d["viajes"] >= VIAJES_MINIMOS_TITULAR
                   and d.get("densidad", 99) >= DENSIDAD_TITULAR]
-    base = (f"El costo de transportar carga se movió {describir_mov(factor)} "
-            "en promedio este mes")
+    base = f"En promedio, el pago por viaje {estado_mercado(factor)} este mes"
     if not destacados:
         return base + ", y ningún corredor importante se salió de ese patrón."
     return base + f". {len(destacados)} corredor(es) se movieron con dinámica propia; ver la tabla."
 
 
-def main():
-    indice = sorted(Path("data").glob("indice_*.json"))[-1]
+DEPARTAMENTOS = ["VALLE DEL CAUCA", "BOGOTA D. C.", "CUNDINAMARCA", "ANTIOQUIA",
+                 "ATLANTICO", "BOLIVAR", "BOYACA", "SANTANDER", "MAGDALENA", "CESAR",
+                 "CALDAS", "RISARALDA", "TOLIMA", "HUILA", "META", "NARIÑO", "CAUCA"]
+
+
+def nombre_municipio(texto):
+    """'BUENAVENTURA VALLE DEL CAUCA' -> 'Buenaventura'; 'BOGOTA BOGOTA D. C.' -> 'Bogota'."""
+    t = texto.strip()
+    for dep in DEPARTAMENTOS:
+        if t.endswith(" " + dep):
+            t = t[: -len(dep) - 1]
+            break
+    return t.title()
+
+
+def describir_carga(d):
+    txt = f"{d['densidad']:.1f} t"
+    if abs(d.get("variacion_carga_pct", 0)) >= 3:
+        txt += f" ({describir_mov(d['variacion_carga_pct'])})"
+    return txt
+
+
+def main(mes=None):
+    indices = sorted(Path("data").glob("indice_*.json"))
+    if not indices:
+        raise RuntimeError("No hay índices en data/: correr primero src/calcular.py")
+    if mes:
+        indice = Path("data") / f"indice_{mes.replace('-', '')}.json"
+        if not indice.exists():
+            raise RuntimeError(f"No existe {indice}: correr primero src/calcular.py {mes}")
+    else:
+        indice = indices[-1]
+    # La página principal solo se actualiza con el mes más reciente que tiene datos,
+    # no con el índice más reciente generado (al regenerar un mes viejo pueden coincidir).
+    ultimo_dato = sorted(Path("data/procesado").glob("fletes_*.parquet"))[-1].stem.split("_")[1]
+    es_ultimo = indice.stem.split("_")[1] == ultimo_dato
     with open(indice) as f:
         r = json.load(f)
 
@@ -72,46 +115,55 @@ def main():
           f"**{resumen_mes(factor, corredores)}**",
           ""]
 
-    md += ["| Corredor | Costo por tonelada movida 1 km | Cambio del mes | "
-           "Comparado con el promedio | Viajes |",
-           "|---|---:|---:|---:|---:|"]
+    md += ["| Corredor | Costo por tonelada movida 1 km | Pago por viaje: cambio del mes | "
+           "Comparado con el promedio | Carga por viaje | Viajes |",
+           "|---|---:|---:|---:|---:|---:|"]
     for c, d in sorted(corredores.items(),
                        key=lambda kv: abs(kv[1]["residuo_pct"]), reverse=True):
-        origen, destino = [p.rsplit(" ", 1)[0].title() for p in c.split(" → ")]
+        origen, destino = [nombre_municipio(p) for p in c.split(" → ")]
         vs = d["residuo_pct"]
         comparado = ("igual que el promedio" if abs(vs) < 3
                      else f"{abs(vs):.0f}% {'más' if vs > 0 else 'menos'} que el promedio")
         md.append(f"| {origen} → {destino} | ${d['flete_ton_km']:,.0f} | "
-                  f"{describir_mov(d['variacion_pct'])} | {comparado} | "
-                  f"{d['viajes']:,} |")
+                  f"{describir_mov(d['variacion_viaje_pct'])} | {comparado} | "
+                  f"{describir_carga(d)} | {d['viajes']:,} |")
 
     md += ["",
            "**Cómo leer la tabla:**",
            "- *Costo por tonelada movida 1 km*: lo que cuesta, en promedio, "
            "transportar una tonelada a lo largo de un kilómetro en ese corredor "
-           "(camiones pesados de carga seca).",
-           "- *Cambio del mes*: cuánto subió o bajó ese costo respecto al mes anterior.",
-           "- *Comparado con el promedio*: si el corredor se movió más o menos que "
-           "el conjunto del mercado. Un corredor que sube cuando todos suben no es "
-           "noticia; uno que se mueve solo, sí.",
+           "(camiones pesados de carga seca). Sirve para comparar corredores entre sí.",
+           "- *Pago por viaje: cambio del mes*: cuánto subió o bajó lo que se paga por "
+           "cada viaje respecto al mes anterior. Es la medida del precio del flete.",
+           "- *Comparado con el promedio*: si el pago por viaje del corredor se movió más "
+           "o menos que el conjunto del mercado. Un corredor que sube cuando todos suben "
+           "no es noticia; uno que se mueve solo, sí.",
+           "- *Carga por viaje*: toneladas promedio por camión y su cambio. Cuando los "
+           "camiones van más cargados, el costo por tonelada-km baja aunque el pago por "
+           "viaje no cambie; por eso el precio se mide por viaje.",
            "",
            "**Nota metodológica.** El costo se calcula sobre viajes con tarifa "
            "declarada, en tractocamiones de carga seca, en rutas de más de 200 km. "
-           "Se excluyen corredores donde la carga es demasiado ligera o variable "
-           "para que el costo por tonelada sea comparable. La detección automática "
-           "de variaciones inusuales está en preparación y requiere más meses de "
-           "datos; por ahora las cifras se presentan como información. Datos con "
-           "unos dos meses de rezago. Metodología y código en el repositorio.",
+           "Se excluyen corredores donde la carga es demasiado ligera o el pago es "
+           "demasiado variable para ser comparable. Desde noviembre de 2026 el "
+           "movimiento de cada corredor se mide sobre el pago por viaje y no sobre el "
+           "costo por tonelada-km, que mezclaba cambios de precio con cambios en la carga "
+           "de los camiones. La detección automática de variaciones inusuales está en "
+           "preparación y requiere más meses de datos; por ahora las cifras se presentan "
+           "como información. Datos con unos dos meses de rezago. Metodología y código "
+           "en el repositorio.",
            "",
            f"*[Metodología y código](https://github.com/carlos-osorio/monitor-fletes)*"]
 
-    
     texto = "\n".join(md)
     Path("reports").mkdir(exist_ok=True)
     (Path("reports") / f"fletes_{r['mes_analizado'].replace('-','')}.md").write_text(
         texto, encoding="utf-8")
+    print(f"Boletín {r['mes_analizado']} escrito. Titular: {titular(factor, corredores)}")
+    if not es_ultimo:
+        print("Mes anterior al más reciente: no se actualizan fletes_ultimo.md ni index.html.")
+        return
     (Path("reports") / "fletes_ultimo.md").write_text(texto, encoding="utf-8")
-    print(f"Boletín escrito. Titular: {titular(factor, corredores)}")
     # Versión web: index.html en la raíz, para GitHub Pages
     try:
         import markdown  # convierte Markdown a HTML
@@ -146,4 +198,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else None)
