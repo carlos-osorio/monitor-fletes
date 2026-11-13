@@ -4,6 +4,50 @@ Módulo terrestre del observatorio de fricción logística. Índice de fletes
 por tonelada-kilómetro sobre datos del RNDC. Formato: lo más reciente arriba.
 
 ---
+## 2026-11-13 — El movimiento se mide sobre el pago por viaje, no sobre $/ton-km
+
+**Contexto:** el residuo en $/ton-km estaba dominado por la carga por viaje, no por
+el precio. Sobre 28 meses y 19 corredores, la correlación entre el residuo en
+$/ton-km y el cambio de toneladas por viaje fue de −0,80; el residuo tenía
+autocorrelación mes a mes de −0,37 (firma de reversión: un mes liviano sube el
+$/ton-km y el siguiente lo devuelve), y el 39% de los movimientos ≥ 8% se
+revertía al mes siguiente. Tres titulares seguidos habrían narrado composición
+como precio: julio (Barranquilla–Bogotá +20% en $/ton-km; ~+4% por viaje, el
+trigo cayó de 91 a 17 viajes), septiembre (Buenaventura–Cota −22%; reversión del
+salto de agosto) y octubre (Cartagena–Girardota −11%; +1% por viaje, la carga
+pasó de 17,5 a 20,3 t/viaje).
+
+**Decisión:** el factor común, el residuo, el z en sombra, el filtro de
+volatilidad y el titular se calculan sobre el pago por viaje
+(VALORESPAGADOS / VIAJESTOTALES). El $/ton-km se conserva como NIVEL, para
+comparar corredores y para la futura brecha con SICE-TAC. El boletín agrega la
+columna de carga por viaje, que explica los movimientos del $/ton-km.
+Identidad: Δlog($/ton-km) = Δlog(pago por viaje) − Δlog(ton por viaje).
+
+**Evidencia de que el pago es por viaje:** la elasticidad agrupada del pago por
+viaje a la carga por viaje (sin factor común) es 0,07. Hay heterogeneidad: entre
+−0,1 y 0,3 en la mayoría de corredores, y 0,57 (Cartagena→Madrid) y 0,62
+(Bogotá→Cartagena) en dos. Con 29 meses no se ajusta por corredor; se revisa con
+~40 meses, junto con la activación de la detección. Con $/viaje, la dispersión
+del residuo baja de 7,6% a 4,4%, la autocorrelación de −0,37 a −0,14 y las
+reversiones de 39% a 18%.
+
+**Corredores con carga muy variable:** Barrancabermeja→Barranquilla, excluido
+en julio por volatilidad (41% en $/ton-km, sospecha de líquidos), tiene solo
+4,1% de volatilidad por viaje: su inestabilidad era de carga, no de precio.
+Pero su carga por viaje oscila con desviación de 0,40 en Δlog (el siguiente
+corredor tiene 0,14), así que su $/ton-km no es comparable con el de otros
+corredores. Se agrega una regla explícita: se excluyen los corredores con
+desviación de Δlog(ton por viaje) > 0,30. Hoy solo afecta a ese corredor.
+
+**Otros cambios:** calcular.py y reportar.py aceptan un mes como argumento
+(`python src/calcular.py 2026-08`), usando solo datos hasta ese mes. Así se
+regeneró el boletín de agosto, que había quedado sin publicar al cargar agosto y
+septiembre juntos. La página principal (index.html y fletes_ultimo.md) solo se
+actualiza con el mes más reciente que tiene datos. Los boletines de julio y
+septiembre publicados con la métrica anterior se conservan sin cambios.
+
+---
 ## 2026-07-25 — Detección en modo sombra: v1 publica el índice sin alertar
 
 **Contexto:** con 25 meses, el MAD expandiente por corredor es un estimador
