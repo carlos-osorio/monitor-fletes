@@ -19,21 +19,21 @@ pasó de 17,5 a 20,3 t/viaje).
 
 **Decisión:** el factor común, el residuo, el z en sombra, el filtro de
 volatilidad y el titular se calculan sobre el pago por viaje
-(VALORESPAGADOS / VIAJESTOTALES). El $/ton-km se conserva como NIVEL, para
+(VALORESPAGADOS / VIAJESTOTALES). El $/$ton-km se conserva como NIVEL, para
 comparar corredores y para la futura brecha con SICE-TAC. El boletín agrega la
-columna de carga por viaje, que explica los movimientos del $/ton-km.
-Identidad: Δlog($/ton-km) = Δlog(pago por viaje) − Δlog(ton por viaje).
+columna de carga por viaje, que explica los movimientos del $/$ton-km.
+Identidad: Δlog($/$ton-km) = Δlog(pago por viaje) − Δlog(ton por viaje).
 
 **Evidencia de que el pago es por viaje:** la elasticidad agrupada del pago por
 viaje a la carga por viaje (sin factor común) es 0,07. Hay heterogeneidad: entre
 −0,1 y 0,3 en la mayoría de corredores, y 0,57 (Cartagena→Madrid) y 0,62
 (Bogotá→Cartagena) en dos. Con 29 meses no se ajusta por corredor; se revisa con
-~40 meses, junto con la activación de la detección. Con $/viaje, la dispersión
+~40 meses, junto con la activación de la detección. Con $/$viaje, la dispersión
 del residuo baja de 7,6% a 4,4%, la autocorrelación de −0,37 a −0,14 y las
 reversiones de 39% a 18%.
 
 **Corredores con carga muy variable:** Barrancabermeja→Barranquilla, excluido
-en julio por volatilidad (41% en $/ton-km, sospecha de líquidos), tiene solo
+en julio por volatilidad (41% en $/$ton-km, sospecha de líquidos), tiene solo
 4,1% de volatilidad por viaje: su inestabilidad era de carga, no de precio.
 Pero su carga por viaje oscila con desviación de 0,40 en Δlog (el siguiente
 corredor tiene 0,14), así que su $/ton-km no es comparable con el de otros
