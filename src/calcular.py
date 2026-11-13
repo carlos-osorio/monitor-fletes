@@ -1,10 +1,17 @@
 """Construye el índice mensual de fletes por corredor a partir de los extractos Parquet.
 
-Diseño en DECISIONS.md. La detección corre en modo SOMBRA: se calculan y
-registran los z, pero no se emiten alertas hasta tener ~40 meses de historia.
+Diseño en DECISIONS.md. Desde nov 2026 el movimiento del mercado y de cada
+corredor se mide sobre el PAGO POR VIAJE; el $/ton-km se conserva como nivel.
+La detección corre en modo SOMBRA: se calculan y registran los z, pero no se
+emiten alertas hasta tener ~40 meses de historia.
+
+Uso:
+    python src/calcular.py            # último mes disponible
+    python src/calcular.py 2026-08    # un mes específico (con datos hasta ese mes)
 """
 
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -14,9 +21,12 @@ import pandas as pd
 CONFIG_PESADOS = "Tractocam"      # subcadena sin tilde (defensa contra "Tractocamión")
 KM_MINIMO = 200
 N_CORREDORES = 20
-VOLATILIDAD_MAXIMA = 0.20         # excluye corredores con desv. de Δlog > 20%
+VOLATILIDAD_MAXIMA = 0.20         # excluye corredores con desv. de Δlog(pago por viaje) > 20%
+CARGA_VARIABLE_MAXIMA = 0.30      # excluye corredores con desv. de Δlog(ton por viaje) > 30%:
+                                  # su $/ton-km no es comparable (ver DECISIONS.md, nov 2026)
 MAD_MINIMO = 0.02                 # piso de escala (2%)
 MIN_PERIODOS = 12                 # historia mínima para estimar la escala
+DENSIDAD_MINIMA = 10              # ton/viaje: un tractocamión con menos no transporta carga pesada creíble
 
 
 def cargar(dir_parquet):
@@ -45,9 +55,8 @@ def flete_unitario(g):
     return g["VALORESPAGADOS"].sum() / (g["KILOGRAMOS"].sum() / 1000 * g["KILOMETROS"].mean())
 
 
-DENSIDAD_MINIMA = 10     # ton/viaje: un tractocamión con menos no transporta carga pesada creíble
-
 def construir_panel(f):
+    """Paneles mes × corredor: $/ton-km (nivel), pago por viaje, viajes y ton/viaje."""
     top = (f.groupby("corredor")["VIAJESTOTALES"].sum()
            .sort_values(ascending=False).head(N_CORREDORES).index)
     sub = f[f["corredor"].isin(top)]
@@ -58,10 +67,12 @@ def construir_panel(f):
     livianos = densidad[densidad < DENSIDAD_MINIMA].index.tolist()
     sub = sub[~sub["corredor"].isin(livianos)]
 
-    panel = (sub.groupby(["periodo", "corredor"])
-             .apply(flete_unitario, include_groups=False).unstack())
-    viajes = (sub.groupby(["periodo", "corredor"])["VIAJESTOTALES"].sum().unstack())
-    return panel, viajes, livianos
+    g = sub.groupby(["periodo", "corredor"])
+    panel = g.apply(flete_unitario, include_groups=False).unstack()
+    viajes = g["VIAJESTOTALES"].sum().unstack()
+    pago_viaje = (g["VALORESPAGADOS"].sum() / g["VIAJESTOTALES"].sum()).unstack()
+    ton_viaje = (g["KILOGRAMOS"].sum() / 1000 / g["VIAJESTOTALES"].sum()).unstack()
+    return panel, pago_viaje, viajes, ton_viaje, livianos
 
 
 def z_sombra(resid):
@@ -74,39 +85,53 @@ def z_sombra(resid):
     return resid.apply(por_corredor)
 
 
-def main():
+def main(mes=None):
     df = cargar("data/procesado")
-    panel, viajes, livianos = construir_panel(filtrar(df))
+    if mes:
+        corte = pd.Timestamp(f"{mes}-01")
+        if corte not in set(df["periodo"]):
+            raise RuntimeError(f"No hay datos para {mes}")
+        df = df[df["periodo"] <= corte]          # el índice de un mes usa solo datos hasta ese mes
 
-    var = np.log(panel).diff().dropna(how="all")
-    volatiles = var.std()[var.std() > VOLATILIDAD_MAXIMA].index.tolist()
-    panel_v1 = panel.drop(columns=volatiles)
-    var_v1 = var.drop(columns=volatiles)
+    panel, pago_viaje, viajes, ton_viaje, livianos = construir_panel(filtrar(df))
 
-    factor = var_v1.median(axis=1)                 # movimiento común del mercado
+    # El movimiento se mide sobre el pago por viaje: no depende de cuánto cargó el camión.
+    # Identidad: Δlog($/ton-km) = Δlog(pago por viaje) − Δlog(ton por viaje).
+    var_viaje = np.log(pago_viaje).diff().dropna(how="all")
+    var_tonkm = np.log(panel).diff()
+    var_carga = np.log(ton_viaje).diff()
+
+    volatiles = var_viaje.std()[var_viaje.std() > VOLATILIDAD_MAXIMA].index.tolist()
+    carga_variable = var_carga.std()[var_carga.std() > CARGA_VARIABLE_MAXIMA].index.tolist()
+    cols = [c for c in panel.columns if c not in volatiles and c not in carga_variable]
+    var_v1 = var_viaje[cols]
+
+    factor = var_v1.median(axis=1)                 # movimiento común del mercado (pago por viaje)
     resid = var_v1.sub(factor, axis=0)             # idiosincrático por corredor
     z = z_sombra(resid)
 
-    ultimo = panel_v1.index[-1]
+    ultimo = var_v1.index[-1]
     corredores = {}
-    kg_mes = (filtrar(df).assign(corredor=lambda x: x["MUNICIPIOORIGEN"]+" → "+x["MUNICIPIODESTINO"])
-          .groupby(["periodo","corredor"])["KILOGRAMOS"].sum().unstack())
-    for c in panel_v1.columns:
+    for c in cols:
         corredores[c] = {
-            "flete_ton_km": round(float(panel_v1.loc[ultimo, c]), 1),
-            "variacion_pct": round(100 * float(var_v1.loc[ultimo, c]), 1),
+            "flete_ton_km": round(float(panel.loc[ultimo, c]), 1),
+            "pago_viaje": round(float(pago_viaje.loc[ultimo, c])),
+            "variacion_viaje_pct": round(100 * float(var_viaje.loc[ultimo, c]), 1),
+            "variacion_ton_km_pct": round(100 * float(var_tonkm.loc[ultimo, c]), 1),
             "residuo_pct": round(100 * float(resid.loc[ultimo, c]), 1),
             "viajes": int(viajes.loc[ultimo, c]),
+            "densidad": round(float(ton_viaje.loc[ultimo, c]), 1),
+            "variacion_carga_pct": round(100 * float(var_carga.loc[ultimo, c]), 1),
             "z_sombra": (None if pd.isna(z.loc[ultimo, c])
                          else round(float(z.loc[ultimo, c]), 2)),
-            "densidad": round(float(kg_mes.loc[ultimo, c]/1000/viajes.loc[ultimo, c]), 1)
-            
         }
 
     resultado = {
         "mes_analizado": ultimo.strftime("%Y-%m"),
-        "meses_disponibles": len(panel_v1),
+        "meses_disponibles": len(panel),
+        "metrica_movimiento": "pago por viaje (desde nov 2026, ver DECISIONS.md)",
         "corredores_excluidos_por_volatilidad": volatiles,
+        "corredores_excluidos_por_carga_variable": carga_variable,
         "factor_comun_pct": round(100 * float(factor.loc[ultimo]), 1),
         "detección": "modo sombra — sin alertas hasta ~40 meses (ver DECISIONS.md)",
         "corredores": corredores,
@@ -117,14 +142,14 @@ def main():
     with open(salida, "w") as fh:
         json.dump(resultado, fh, indent=2, ensure_ascii=False)
 
-    print(f"Índice escrito en {salida} ({len(panel_v1)} meses, "
+    print(f"Índice escrito en {salida} ({len(panel)} meses, "
           f"{len(corredores)} corredores)")
-    print(f"Factor común del mes: {resultado['factor_comun_pct']:+.1f}%")
+    print(f"Factor común del mes (pago por viaje): {resultado['factor_comun_pct']:+.1f}%")
     for c, d in sorted(corredores.items(),
                        key=lambda kv: abs(kv[1]["residuo_pct"]), reverse=True)[:5]:
-        print(f"  {c[:45]:<45} {d['flete_ton_km']:>7.0f}  "
-              f"var {d['variacion_pct']:+5.1f}%  resid {d['residuo_pct']:+5.1f}%")
+        print(f"  {c[:45]:<45} viaje {d['variacion_viaje_pct']:+5.1f}%  "
+              f"resid {d['residuo_pct']:+5.1f}%  carga {d['variacion_carga_pct']:+5.1f}%")
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else None)
