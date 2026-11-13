@@ -6,11 +6,11 @@ por tonelada-kilómetro sobre datos del RNDC. Formato: lo más reciente arriba.
 ---
 ## 2026-11-13 — El movimiento se mide sobre el pago por viaje, no sobre $/ton-km
 
-**Contexto:** el residuo en $/ton-km estaba dominado por la carga por viaje, no por
+**Contexto:** el residuo en $/ton-km$ estaba dominado por la carga por viaje, no por
 el precio. Sobre 28 meses y 19 corredores, la correlación entre el residuo en
-$/ton-km y el cambio de toneladas por viaje fue de −0,80; el residuo tenía
+$/ton-km$ y el cambio de toneladas por viaje fue de −0,80; el residuo tenía
 autocorrelación mes a mes de −0,37 (firma de reversión: un mes liviano sube el
-$/ton-km y el siguiente lo devuelve), y el 39% de los movimientos ≥ 8% se
+$/ton-km$ y el siguiente lo devuelve), y el 39% de los movimientos ≥ 8% se
 revertía al mes siguiente. Tres titulares seguidos habrían narrado composición
 como precio: julio (Barranquilla–Bogotá +20% en $/ton-km; ~+4% por viaje, el
 trigo cayó de 91 a 17 viajes), septiembre (Buenaventura–Cota −22%; reversión del
